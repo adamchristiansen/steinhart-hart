@@ -4,6 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+from typing import Optional, Tuple
+
 import numpy as np
 
 # Coefficients are taken as the defaults used for ILX Lightwave laser diode
@@ -13,9 +15,13 @@ import numpy as np
 #
 # [1] https://www.newport.com/medias/sys_master/images/images/h67/hc1/
 #       8797049487390/AN04-Thermistor-Calibration-and-Steinhart-Hart.pdf
-DEFAULT_ABC = (1.125e-3, 2.347e-4, 0.855e-7)
+DEFAULT_ABC: Tuple[float, float, float] = (1.125e-3, 2.347e-4, 0.855e-7)
 
-def temperature(r, abc=None):
+def temperature(
+    r: float,
+    /,
+    abc: Optional[Tuple[float, float, float]]=None
+  ) -> float:
   """Calculates the temperature of a semiconductor.
 
   The temperature of a semiconductor is found from its resistance using the
@@ -38,7 +44,11 @@ def temperature(r, abc=None):
   a, b, c = DEFAULT_ABC if abc is None else abc
   return 1 / (a + b * np.log(r) + c * np.log(r) ** 3)
 
-def resistance(t, abc=None):
+def resistance(
+    t: float,
+    /,
+    abc: Optional[Tuple[float, float, float]]=None
+  ) -> float:
   """Calculates the resistance of a semiconductor.
 
   The resistance of a semiconductor is found from its temperature using the
