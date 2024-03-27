@@ -36,7 +36,7 @@ def temperature(r, abc=None):
   # [1] https://wikipedia.org/wiki/Steinhart-Hart_equation
   # [2] https://doi.org/10.1016/0011-7471(68)90057-0 (Steinhart-Hart 1968)
   a, b, c = DEFAULT_ABC if abc is None else abc
-  return 1 / (a + b * np.log(r) + c * np.log(r) ** 3) - 273.15
+  return 1 / (a + b * np.log(r) + c * np.log(r) ** 3)
 
 def resistance(t, abc=None):
   """Calculates the resistance of a semiconductor.
@@ -60,7 +60,7 @@ def resistance(t, abc=None):
   #       http://www.cornerstonesensors.com/reports/
   #       ABC%20Coefficients%20for%20Steinhart-Hart%20Equation.pdf
   a, b, c = DEFAULT_ABC if abc is None else abc
-  x = (a - 1 / (t + 273.15)) / c
+  x = (a - 1 / t) / c
   y = np.sqrt((b / (3 * c)) ** 3 + x ** 2 / 4)
   return np.exp(np.cbrt(y - x / 2) - np.cbrt(y + x / 2))
 
@@ -69,29 +69,50 @@ if __name__ == '__main__':
 
   parser = argparse.ArgumentParser(
     description='Model the temperature and resistance of a semiconductor')
-  group = parser.add_mutually_exclusive_group(required=True)
-  group.add_argument(
-    '--temperature', '-T',
+  parser.add_argument('x',
     type=float, action='store',
-    help='The temperature in °C')
-  group.add_argument(
-    '--resistance', '-R',
-    type=float, action='store',
-    help='The resistance in Ω')
-  parser.add_argument(
-    '--decimals', '-d',
-    type=int, action='store', default=None,
-    help='Number of decimals in output')
+    help='The value to convert')
+  arg_type = parser.add_mutually_exclusive_group(required=False)
+  arg_type.add_argument('--resistance', '-R',
+    action='store_true',
+    help='Treat the argument as resistance in Ω')
+  arg_type.add_argument('--temperature', '-T',
+    action='store_true',
+    help='Treat the argument as temperature in °C')
+  units = parser.add_mutually_exclusive_group(required=False)
+  units.add_argument('--celsius', '-C',
+    action='store_true',
+    help='Use °C for temperature')
+  units.add_argument('--kelvin', '-K',
+    action='store_true',
+    help='Use K for temperature')
+  parser.add_argument('--number-only', '-x',
+    action='store_true',
+    help='Display just the result instead of the conversion information')
   args = parser.parse_args()
 
-  DECIMALS = args.decimals if args.decimals is not None else \
-    (0 if args.temperature is not None else 3)
+  # Whether the operation is forward (i.e., resistance to temperature) or
+  # reverse (i.e., temperature to resistance).
+  forward = True if args.resistance else \
+    False if args.temperature else args.x >= 1000
 
-  if args.temperature is not None:
-    t = args.temperature
-    r = resistance(t)
-    print(f"{{:g}} °C -> {{:.0{DECIMALS}f}} Ω".format(t, r))
+  # Decide which functions, units, and adjustements to use.
+  #
+  # - f is the conversion function.
+  # - xunit and xadj are the units and offset added to the argument of f.
+  # - yunit and yadj are the units and offset added to the return value of f.
+  if forward:
+    f = temperature
+    xunit, xadj = 'Ω', 0.0
+    yunit, yadj = ('°C', -273.15) if not args.kelvin else ('K', 0.0)
   else:
-    r = args.resistance
-    t = temperature(r)
-    print(f"{{:g}} Ω -> {{:.0{DECIMALS}f}} °C".format(r, t))
+    f = resistance
+    xunit, xadj = ('°C', +273.15) if not args.kelvin else ('K', 0.0)
+    yunit, yadj = 'Ω', 0.0
+
+  # Perform the conversion.
+  y = f(args.x + xadj) + yadj
+  if args.number_only:
+    print(f"{y:.03f}")
+  else:
+    print(f"{args.x:.03f} {xunit} -> {y:.03f} {yunit}")
