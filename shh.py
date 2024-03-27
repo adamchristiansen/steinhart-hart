@@ -4,24 +4,33 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TypeVar
 
 import numpy as np
+import numpy.typing as npt
+
+# A type variable used to describe the generic temperature and resistance
+# conversion functions.
+T = TypeVar('T', bound=npt.NBitBase)
+
+# The ABC coefficients for the Steinhart-Hart equation as a tuple of (A, B, C).
+# The units of the coefficients are K^-1.
+ABC = Tuple[float, float, float]
 
 # Coefficients are taken as the defaults used for ILX Lightwave laser diode
-# controllers. This is tuple of (A, B, C).
+# controllers.
 #
 # References:
 #
 # [1] https://www.newport.com/medias/sys_master/images/images/h67/hc1/
 #       8797049487390/AN04-Thermistor-Calibration-and-Steinhart-Hart.pdf
-DEFAULT_ABC: Tuple[float, float, float] = (1.125e-3, 2.347e-4, 0.855e-7)
+DEFAULT_ABC: ABC = (1.125e-3, 2.347e-4, 0.855e-7)
 
 def temperature(
-    r: float,
+    r: npt.NDArray[np.floating[T]],
     /,
-    abc: Optional[Tuple[float, float, float]]=None
-  ) -> float:
+    abc: Optional[ABC]=None
+  ) -> npt.NDArray[np.floating[T]]:
   """Calculates the temperature of a semiconductor.
 
   The temperature of a semiconductor is found from its resistance using the
@@ -42,13 +51,13 @@ def temperature(
   # [1] https://wikipedia.org/wiki/Steinhart-Hart_equation
   # [2] https://doi.org/10.1016/0011-7471(68)90057-0 (Steinhart-Hart 1968)
   a, b, c = DEFAULT_ABC if abc is None else abc
-  return 1 / (a + b * np.log(r) + c * np.log(r) ** 3)
+  return np.asarray(1 / (a + b * np.log(r) + c * np.log(r) ** 3))
 
 def resistance(
-    t: float,
+    t: npt.NDArray[np.floating[T]],
     /,
-    abc: Optional[Tuple[float, float, float]]=None
-  ) -> float:
+    abc: Optional[ABC]=None
+  ) -> npt.NDArray[np.floating[T]]:
   """Calculates the resistance of a semiconductor.
 
   The resistance of a semiconductor is found from its temperature using the
@@ -72,7 +81,7 @@ def resistance(
   a, b, c = DEFAULT_ABC if abc is None else abc
   x = (a - 1 / t) / c
   y = np.sqrt((b / (3 * c)) ** 3 + x ** 2 / 4)
-  return np.exp(np.cbrt(y - x / 2) - np.cbrt(y + x / 2))
+  return np.asarray(np.exp(np.cbrt(y - x / 2) - np.cbrt(y + x / 2)))
 
 if __name__ == '__main__':
   import argparse
