@@ -6,26 +6,62 @@
 
 import numpy as np
 
-# Coefficients are taken as the defaults used for ILX Lightwave laser diode controllers.
+# Coefficients are taken as the defaults used for ILX Lightwave laser diode
+# controllers. This is tuple of (A, B, C).
 #
-# ILX Lightwave. Application Note #4: Thermistor Calibration and the
-# Steinhart-Hart Equation, 2006. Rev. 03.071709. Available:
-# https://www.newport.com/medias/sys_master/images/images/h67/hc1/8797049487390/AN04-Thermistor-Calibration-and-Steinhart-Hart.pdf.
-A = 1.125e-3
-B = 2.347e-4
-C = 0.855e-7
+# References:
+#
+# [1] https://www.newport.com/medias/sys_master/images/images/h67/hc1/
+#       8797049487390/AN04-Thermistor-Calibration-and-Steinhart-Hart.pdf
+DEFAULT_ABC = (1.125e-3, 2.347e-4, 0.855e-7)
 
-def steinhart3(r):
-  return 1 / (A + B * np.log(r) + C * np.log(r) ** 3) - 273.15
+def temperature(r, abc=None):
+  """Calculates the temperature of a semiconductor.
 
-def steinhart3_inv(t):
-  # The inverse of the Steinhart-Hart equation.
+  The temperature of a semiconductor is found from its resistance using the
+  three term Steinhart-Hart equation.
+
+  Args:
+    r:
+      The resistance in Ω.
+    abc:
+      The Steinhart-Hart ABC coefficients as a 3 tuple. If None then the
+      DEFAULT_ABC coefficients are used.
+
+  Returns:
+    The temperature in Kelvin.
+  """
+  # References:
   #
-  # Cornerstone Sensors. A, B, C Coefficients for Steinhart-Hart Equation.
-  # 2007. Available:
-  # https://web.archive.org/web/20110708192840/http://www.cornerstonesensors.com/reports/ABC%20Coefficients%20for%20Steinhart-Hart%20Equation.pdf.
-  x = (A - 1 / (t + 273.15)) / C
-  y = np.sqrt((B / (3 * C)) ** 3 + x ** 2 / 4)
+  # [1] https://wikipedia.org/wiki/Steinhart-Hart_equation
+  # [2] https://doi.org/10.1016/0011-7471(68)90057-0 (Steinhart-Hart 1968)
+  a, b, c = DEFAULT_ABC if abc is None else abc
+  return 1 / (a + b * np.log(r) + c * np.log(r) ** 3) - 273.15
+
+def resistance(t, abc=None):
+  """Calculates the resistance of a semiconductor.
+
+  The resistance of a semiconductor is found from its temperature using the
+  inverse three term Steinhart-Hart equation.
+
+  Args:
+    t:
+      The temperature in Kelvin.
+    abc:
+      The Steinhart-Hart ABC coefficients as a 3 tuple. If None then the
+      DEFAULT_ABC coefficients are used.
+
+  Returns:
+    The resistance in Ω.
+  """
+  # Referenes:
+  #
+  # [1]: https://web.archive.org/web/20110708192840/
+  #       http://www.cornerstonesensors.com/reports/
+  #       ABC%20Coefficients%20for%20Steinhart-Hart%20Equation.pdf
+  a, b, c = DEFAULT_ABC if abc is None else abc
+  x = (a - 1 / (t + 273.15)) / c
+  y = np.sqrt((b / (3 * c)) ** 3 + x ** 2 / 4)
   return np.exp(np.cbrt(y - x / 2) - np.cbrt(y + x / 2))
 
 if __name__ == '__main__':
@@ -46,14 +82,6 @@ if __name__ == '__main__':
     '--decimals', '-d',
     type=int, action='store', default=None,
     help='Number of decimals in output')
-  parser.add_argument(
-    '--rmin',
-    type=int, action='store', default=3000,
-    help='Minimum thermistor value')
-  parser.add_argument(
-    '--rmax',
-    type=int, action='store', default=25000,
-    help='Maximum thermistor value')
   args = parser.parse_args()
 
   DECIMALS = args.decimals if args.decimals is not None else \
@@ -61,9 +89,9 @@ if __name__ == '__main__':
 
   if args.temperature is not None:
     t = args.temperature
-    r = steinhart3_inv(t)
+    r = resistance(t)
     print(f"{{:g}} °C -> {{:.0{DECIMALS}f}} Ω".format(t, r))
   else:
     r = args.resistance
-    t = steinhart3(r)
+    t = temperature(r)
     print(f"{{:g}} Ω -> {{:.0{DECIMALS}f}} °C".format(r, t))
