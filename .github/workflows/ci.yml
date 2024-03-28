@@ -4,6 +4,7 @@ on: [push]
 
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -17,5 +18,7 @@ jobs:
         run: pipx install mypy
       - name: Install requirements
         run: pip install -r requirements.txt
+      - name: Type check
+        run: mypy steinhart_hart_doctest.py
       - name: Doctests
         run: python steinhart_hart_doctest.py -v
