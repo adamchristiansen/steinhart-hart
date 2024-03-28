@@ -22,7 +22,7 @@ and well documented.
 The [`steinhart_hart.py`](./steinhart_hart.py) file can be executed. Some
 examples:
 
-```sh
+```
 $ python3 steinhart_hart.py 25
 25.000 °C -> 10021.351 Ω
 
