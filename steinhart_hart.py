@@ -51,6 +51,10 @@ def temperature(
 
   Returns:
     The temperature in Kelvin.
+
+  >>> t = temperature(10000, abc=(1.1e-3, 2.4e-4, 0.9e-7))
+  >>> round(t, 3)
+  295.788
   """
   # References:
   #
@@ -79,6 +83,10 @@ def resistance(
 
   Returns:
     The resistance in Ω.
+
+  >>> r = resistance(298, abc=(1.1e-3, 2.4e-4, 0.9e-7))
+  >>> round(r, 3)
+  9088.812
   """
   # Referenes:
   #
@@ -101,12 +109,28 @@ class Abc:
       abc:
         The Steinhart-Hart ABC coefficients. If None then the DEFAULT_ABC
         coefficients are used.
+
+    >>> Abc().abc == DEFAULT_ABC
+    True
+    >>> abc=(1.1e-3, 2.4e-4, 0.9e-7)
+    >>> model = Abc(abc)
+    >>> model.abc == abc
+    True
     """
     self.__abc = DEFAULT_ABC if abc is None else abc
 
   @property
   def abc(self) -> ABC:
-    """The ABC coefficients."""
+    """
+    The ABC coefficients.
+
+    >>> model = Abc()
+    >>> model.abc == DEFAULT_ABC
+    True
+    >>> model.abc = (1.0, 2.0, 3.0)
+    >>> model.abc
+    (1.0, 2.0, 3.0)
+    """
     return self.__abc
 
   @abc.setter
@@ -130,6 +154,11 @@ class Abc:
 
     Returns:
       The temperature in Kelvin.
+
+    >>> model = Abc(abc=(1.1e-3, 2.4e-4, 0.9e-7))
+    >>> t = model.temperature(10000)
+    >>> round(t, 3)
+    295.788
     """
     return temperature(r, abc=self.__abc)
 
@@ -146,6 +175,11 @@ class Abc:
 
     Returns:
       The resistance in Ω.
+
+    >>> model = Abc(abc=(1.1e-3, 2.4e-4, 0.9e-7))
+    >>> r = model.resistance(298)
+    >>> round(r, 3)
+    9088.812
     """
     return resistance(t, abc=self.__abc)
 
