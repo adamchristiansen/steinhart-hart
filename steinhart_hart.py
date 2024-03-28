@@ -27,10 +27,10 @@ ABC = Tuple[float, float, float]
 DEFAULT_ABC: ABC = (1.125e-3, 2.347e-4, 0.855e-7)
 
 def temperature(
-    r: npt.NDArray[np.floating[T]],
+    r: npt.NDArray[np.float64],
     /,
     abc: Optional[ABC]=None
-  ) -> npt.NDArray[np.floating[T]]:
+  ) -> npt.NDArray[np.float64]:
   """Calculates the temperature of a semiconductor.
 
   The temperature of a semiconductor is found from its resistance using the
@@ -51,13 +51,13 @@ def temperature(
   # [1] https://wikipedia.org/wiki/Steinhart-Hart_equation
   # [2] https://doi.org/10.1016/0011-7471(68)90057-0 (Steinhart-Hart 1968)
   a, b, c = DEFAULT_ABC if abc is None else abc
-  return np.asarray(1 / (a + b * np.log(r) + c * np.log(r) ** 3))
+  return 1 / (a + b * np.log(r) + c * np.log(r) ** 3)
 
 def resistance(
-    t: npt.NDArray[np.floating[T]],
+    t: npt.NDArray[np.float64],
     /,
     abc: Optional[ABC]=None
-  ) -> npt.NDArray[np.floating[T]]:
+  ) -> npt.NDArray[np.float64]:
   """Calculates the resistance of a semiconductor.
 
   The resistance of a semiconductor is found from its temperature using the
@@ -81,7 +81,7 @@ def resistance(
   a, b, c = DEFAULT_ABC if abc is None else abc
   x = (a - 1 / t) / c
   y = np.sqrt((b / (3 * c)) ** 3 + x ** 2 / 4)
-  return np.asarray(np.exp(np.cbrt(y - x / 2) - np.cbrt(y + x / 2)))
+  return np.exp(np.cbrt(y - x / 2) - np.cbrt(y + x / 2))
 
 if __name__ == '__main__':
   import argparse
